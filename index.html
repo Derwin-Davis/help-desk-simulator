@@ -13,22 +13,72 @@
   </header>
 
   <main>
-    <h2>Ticket Queue</h2>
-    <table id="queue">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Subject</th>
-          <th>Requester</th>
-          <th>Priority</th>
-          <th>Status</th>
-          <th>SLA</th>
-        </tr>
-      </thead>
-      <tbody id="queue-body">
-        <!-- Tickets will be added here by js/app.js -->
-      </tbody>
-    </table>
+    <!-- ===== Queue view: the list of all tickets ===== -->
+    <section id="queue-view">
+      <h2>Ticket Queue</h2>
+      <table id="queue">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Subject</th>
+            <th>Requester</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>SLA</th>
+          </tr>
+        </thead>
+        <tbody id="queue-body">
+          <!-- Tickets will be added here by js/app.js -->
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ===== Ticket view: one ticket, opened from the queue ===== -->
+    <!-- "hidden" keeps it invisible until you click a ticket -->
+    <section id="ticket-view" hidden>
+      <button id="back-button">&larr; Back to queue</button>
+
+      <div class="ticket-card">
+        <div class="ticket-header">
+          <div>
+            <p class="ticket-id" id="tv-id"></p>
+            <h2 id="tv-subject"></h2>
+            <p class="ticket-meta" id="tv-requester"></p>
+          </div>
+
+          <div class="ticket-fields">
+            <label>
+              Priority
+              <select id="tv-priority">
+                <option value="">Not set</option>
+                <option value="P1">P1 - Critical</option>
+                <option value="P2">P2 - High</option>
+                <option value="P3">P3 - Medium</option>
+                <option value="P4">P4 - Low</option>
+              </select>
+            </label>
+
+            <label>
+              Status
+              <select id="tv-status">
+                <option>New</option>
+                <option>In Progress</option>
+                <option>Waiting on User</option>
+                <option>On Hold</option>
+                <option>Escalated</option>
+                <option>Resolved</option>
+                <option>Closed</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <h3>Conversation</h3>
+        <div id="tv-thread">
+          <!-- Messages will be added here by js/app.js -->
+        </div>
+      </div>
+    </section>
   </main>
 
   <script src="data/tickets.js"></script>

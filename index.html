@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Help Desk Simulator</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <h1>Help Desk Simulator</h1>
+    <p>Work the queue. Meet your SLAs. Get graded.</p>
+  </header>
+
+  <main>
+    <h2>Ticket Queue</h2>
+    <table id="queue">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Subject</th>
+          <th>Requester</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>SLA</th>
+        </tr>
+      </thead>
+      <tbody id="queue-body">
+        <!-- Tickets will be added here by js/app.js -->
+      </tbody>
+    </table>
+  </main>
+
+  <script src="data/tickets.js"></script>
+  <script src="js/sla.js"></script>
+  <script src="js/responder.js"></script>
+  <script src="js/grading.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

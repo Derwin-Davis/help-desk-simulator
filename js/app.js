@@ -12,22 +12,38 @@ const tvRequester = document.getElementById("tv-requester");
 const tvPriority  = document.getElementById("tv-priority");
 const tvStatus    = document.getElementById("tv-status");
 const tvThread    = document.getElementById("tv-thread");
+const composer     = document.querySelector(".composer");
+const tabReply     = document.getElementById("tab-reply");
+const tabNote      = document.getElementById("tab-note");
+const composerText = document.getElementById("composer-text");
+const composerHint = document.getElementById("composer-hint");
+const composerSend = document.getElementById("composer-send");
 
 // ===== The agent's work on each ticket =====
 // tickets.js is the "starting script" and never changes.
-// What YOU do (priority you set, status you pick) is stored here instead,
+// What YOU do (priority, status, messages) is stored here instead,
 // one entry per ticket id. Example: ticketState["INC-1001"].priority
 const ticketState = {};
 
 TICKETS.forEach(function (ticket) {
   ticketState[ticket.id] = {
     priority: "",     // empty = not set yet
-    status: "New"
+    status: "New",
+    // The conversation. Each message has a "type":
+    //   "user"  = the end user wrote it
+    //   "reply" = you wrote it, and the user can see it
+    //   "note"  = you wrote it, IT staff only
+    messages: [
+      { type: "user", text: ticket.firstMessage }
+    ]
   };
 });
 
 // Which ticket is open right now (null = none, we're on the queue)
 let openTicketId = null;
+
+// Is the composer writing a "reply" or a "note"?
+let composerMode = "reply";
 
 // ===== Queue =====
 
@@ -90,17 +106,85 @@ function openTicket(id) {
   tvPriority.value = state.priority;
   tvStatus.value = state.status;
 
-  // Show the user's first message
-  tvThread.innerHTML = `
-    <div class="message from-user">
-      <div class="message-from">${ticket.requester}</div>
-      <p>${ticket.firstMessage}</p>
-    </div>
-  `;
+  // Show the conversation and reset the writing box
+  renderThread();
+  composerText.value = "";
+  setComposerMode("reply");
 
   // Swap screens: hide the queue, show the ticket
   queueView.hidden = true;
   ticketView.hidden = false;
+}
+
+// Draw every message in the open ticket's conversation
+function renderThread() {
+  const ticket = findTicket(openTicketId);
+  const messages = ticketState[openTicketId].messages;
+  tvThread.innerHTML = "";
+
+  messages.forEach(function (message) {
+    const box = document.createElement("div");
+    const from = document.createElement("div");
+    const text = document.createElement("p");
+    from.className = "message-from";
+
+    if (message.type === "user") {
+      box.className = "message from-user";
+      from.textContent = ticket.requester;
+    } else if (message.type === "reply") {
+      box.className = "message from-agent";
+      from.textContent = "You (IT Help Desk)";
+    } else {
+      box.className = "message note";
+      from.className = "message-from note-label";
+      from.textContent = "Internal note · not visible to user";
+    }
+
+    // textContent (not innerHTML) shows your typing exactly as typed,
+    // so text like <b> can't accidentally turn into real HTML.
+    text.textContent = message.text;
+
+    box.appendChild(from);
+    box.appendChild(text);
+    tvThread.appendChild(box);
+  });
+}
+
+// Switch the composer between "reply" and "note"
+function setComposerMode(mode) {
+  composerMode = mode;
+
+  if (mode === "reply") {
+    tabReply.classList.add("active");
+    tabNote.classList.remove("active");
+    composer.classList.remove("note-mode");
+    composerText.placeholder = "Write a reply the user will see...";
+    composerHint.textContent = "The user will see this.";
+    composerSend.textContent = "Send reply";
+  } else {
+    tabNote.classList.add("active");
+    tabReply.classList.remove("active");
+    composer.classList.add("note-mode");
+    composerText.placeholder = "Write a note for IT staff only...";
+    composerHint.textContent = "Only IT staff will see this.";
+    composerSend.textContent = "Add note";
+  }
+}
+
+// Add what you typed to the conversation
+function sendMessage() {
+  const text = composerText.value.trim();   // trim() removes extra spaces
+  if (text === "") {
+    return;   // nothing typed, do nothing
+  }
+
+  ticketState[openTicketId].messages.push({
+    type: composerMode,   // "reply" or "note"
+    text: text
+  });
+
+  composerText.value = "";
+  renderThread();
 }
 
 function closeTicket() {
@@ -123,6 +207,16 @@ tvStatus.addEventListener("change", function () {
 });
 
 backButton.addEventListener("click", closeTicket);
+
+tabReply.addEventListener("click", function () {
+  setComposerMode("reply");
+});
+
+tabNote.addEventListener("click", function () {
+  setComposerMode("note");
+});
+
+composerSend.addEventListener("click", sendMessage);
 
 // ===== Start-up =====
 renderQueue();

@@ -187,3 +187,96 @@ h3 {
 .message.from-user {
   border-left: 4px solid #3b82f6;
 }
+
+/* ===== Replies vs. internal notes (Step 3b) ===== */
+
+/* Your replies to the user: green edge */
+.message.from-agent {
+  border-left: 4px solid #16a34a;
+}
+
+/* Internal notes: yellow, so you never confuse them with replies */
+.message.note {
+  background: #fef9c3;
+  border-color: #fde047;
+  border-left: 4px solid #ca8a04;
+}
+
+.note-label {
+  color: #a16207;
+}
+
+.composer {
+  margin-top: 20px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.composer-tabs {
+  display: flex;
+  background: #f1f5f9;
+  border-bottom: 1px solid #cbd5e1;
+}
+
+.tab {
+  background: none;
+  border: none;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  color: #475569;
+}
+
+.tab.active {
+  background: #ffffff;
+  color: #1f2937;
+  font-weight: bold;
+}
+
+#composer-text {
+  width: 100%;
+  border: none;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+#composer-text:focus {
+  outline: none;
+}
+
+/* When writing a note, the whole box turns yellow */
+.composer.note-mode #composer-text {
+  background: #fefce8;
+}
+
+.composer-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #e5e7eb;
+  font-size: 13px;
+  color: #64748b;
+}
+
+#composer-send {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+#composer-send:hover {
+  background: #1d4ed8;
+}
+
+.composer.note-mode #composer-send {
+  background: #ca8a04;
+}

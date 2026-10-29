@@ -77,6 +77,20 @@
         <div id="tv-thread">
           <!-- Messages will be added here by js/app.js -->
         </div>
+
+        <!-- ===== Composer: where you write replies and notes ===== -->
+        <div class="composer">
+          <div class="composer-tabs">
+            <button id="tab-reply" class="tab active">Reply to user</button>
+            <button id="tab-note" class="tab">Internal note</button>
+          </div>
+          <textarea id="composer-text" rows="4"
+            placeholder="Write a reply the user will see..."></textarea>
+          <div class="composer-footer">
+            <span id="composer-hint">The user will see this.</span>
+            <button id="composer-send">Send reply</button>
+          </div>
+        </div>
       </div>
     </section>
   </main>

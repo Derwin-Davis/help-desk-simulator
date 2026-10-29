@@ -90,6 +90,11 @@
             <button id="tab-reply" class="tab active">Reply to user</button>
             <button id="tab-note" class="tab">Internal note</button>
           </div>
+          <!-- Pick what your reply does. Only shown for replies, not notes. -->
+          <label id="action-row">
+            What does this reply do?
+            <select id="composer-action"></select>
+          </label>
           <textarea id="composer-text" rows="4"
             placeholder="Write a reply the user will see..."></textarea>
           <div class="composer-footer">

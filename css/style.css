@@ -303,3 +303,46 @@ h3 {
 .sla-breached { background: #fee2e2; color: #b91c1c; }  /* red: missed */
 .sla-paused   { background: #e5e7eb; color: #4b5563; }  /* gray: clock paused */
 .sla-met      { background: #dbeafe; color: #1d4ed8; }  /* blue: done on time */
+
+/* ===== Scripted users (Step 5) ===== */
+#action-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px 0;
+  font-size: 12px;
+  font-weight: bold;
+  color: #475569;
+  text-transform: uppercase;
+}
+
+#action-row[hidden] {
+  display: none;
+}
+
+#composer-action {
+  padding: 6px 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  text-transform: none;
+  font-weight: normal;
+  color: #1f2937;
+  background: #ffffff;
+}
+
+.action-tag {
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: #dcfce7;
+  color: #15803d;
+  font-weight: normal;
+}
+
+.typing {
+  font-size: 13px;
+  font-style: italic;
+  color: #64748b;
+  margin: 0 0 12px 4px;
+}

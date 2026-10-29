@@ -18,6 +18,8 @@ const tabNote      = document.getElementById("tab-note");
 const composerText = document.getElementById("composer-text");
 const composerHint = document.getElementById("composer-hint");
 const composerSend = document.getElementById("composer-send");
+const actionRow       = document.getElementById("action-row");
+const composerAction  = document.getElementById("composer-action");
 const tvSlaResponse = document.getElementById("tv-sla-response");
 const tvSlaResolve  = document.getElementById("tv-sla-resolve");
 
@@ -41,7 +43,9 @@ TICKETS.forEach(function (ticket) {
     // SLA tracking, all in game minutes (see sla.js)
     elapsed: 0,             // working time used so far (pauses don't count)
     firstResponseAt: null,  // when you sent your first reply
-    resolvedAt: null        // when you set Resolved or Closed
+    resolvedAt: null,       // when you set Resolved or Closed
+    actionsTaken: [],       // ids of actions you picked, in order (for grading)
+    userTyping: false       // true while the user is "typing" an answer
   };
 });
 
@@ -116,6 +120,7 @@ function openTicket(id) {
   updateSlaDisplays();
 
   // Show the conversation and reset the writing box
+  buildActionOptions(ticket);
   renderThread();
   composerText.value = "";
   setComposerMode("reply");
@@ -143,6 +148,13 @@ function renderThread() {
     } else if (message.type === "reply") {
       box.className = "message from-agent";
       from.textContent = "You (IT Help Desk)";
+      // Show which action this reply used, as a small tag
+      if (message.actionLabel) {
+        const tag = document.createElement("span");
+        tag.className = "action-tag";
+        tag.textContent = message.actionLabel;
+        from.appendChild(tag);
+      }
     } else {
       box.className = "message note";
       from.className = "message-from note-label";
@@ -157,6 +169,44 @@ function renderThread() {
     box.appendChild(text);
     tvThread.appendChild(box);
   });
+
+  // "Dana is typing..." while we wait for the user's answer
+  if (ticketState[openTicketId].userTyping) {
+    const typing = document.createElement("div");
+    typing.className = "typing";
+    typing.textContent = ticket.requester + " is typing...";
+    tvThread.appendChild(typing);
+  }
+}
+
+// Fill the action dropdown with this ticket's actions, grouped by kind
+function buildActionOptions(ticket) {
+  const groups = {
+    ask: "Ask the user",
+    do:  "Have the user try something",
+    fix: "Take action yourself"
+  };
+
+  composerAction.innerHTML = "";
+
+  const general = document.createElement("option");
+  general.value = "general";
+  general.textContent = "General update (no question or action)";
+  composerAction.appendChild(general);
+
+  Object.keys(groups).forEach(function (kind) {
+    const group = document.createElement("optgroup");
+    group.label = groups[kind];
+    ticket.actions.forEach(function (action) {
+      if (action.kind === kind) {
+        const option = document.createElement("option");
+        option.value = action.id;
+        option.textContent = action.label;
+        group.appendChild(option);
+      }
+    });
+    composerAction.appendChild(group);
+  });
 }
 
 // Switch the composer between "reply" and "note"
@@ -167,6 +217,7 @@ function setComposerMode(mode) {
     tabReply.classList.add("active");
     tabNote.classList.remove("active");
     composer.classList.remove("note-mode");
+    actionRow.hidden = false;
     composerText.placeholder = "Write a reply the user will see...";
     composerHint.textContent = "The user will see this.";
     composerSend.textContent = "Send reply";
@@ -174,6 +225,7 @@ function setComposerMode(mode) {
     tabNote.classList.add("active");
     tabReply.classList.remove("active");
     composer.classList.add("note-mode");
+    actionRow.hidden = true;     // notes don't go to the user, so no action
     composerText.placeholder = "Write a note for IT staff only...";
     composerHint.textContent = "Only IT staff will see this.";
     composerSend.textContent = "Add note";
@@ -187,11 +239,24 @@ function sendMessage() {
     return;   // nothing typed, do nothing
   }
 
+  const ticket = findTicket(openTicketId);
   const state = ticketState[openTicketId];
-  state.messages.push({
-    type: composerMode,   // "reply" or "note"
-    text: text
-  });
+
+  if (composerMode === "note") {
+    state.messages.push({ type: "note", text: text });
+  } else {
+    // A reply: remember which action it used
+    const actionId = composerAction.value;
+    const option = composerAction.options[composerAction.selectedIndex];
+    state.messages.push({
+      type: "reply",
+      text: text,
+      actionId: actionId,
+      actionLabel: actionId === "general" ? "" : option.textContent
+    });
+    state.actionsTaken.push(actionId);
+    waitForUser(ticket, state, actionId);
+  }
 
   // Your first reply to the user stops the first-response clock.
   // Internal notes don't count: the user can't see them.
@@ -201,7 +266,34 @@ function sendMessage() {
   }
 
   composerText.value = "";
+  composerAction.value = "general";
   renderThread();
+}
+
+// Ask responder.js for the user's answer, then add it to the ticket
+function waitForUser(ticket, state, actionId) {
+  state.userTyping = true;
+
+  getUserReply(ticket, state, actionId).then(function (answer) {
+    state.userTyping = false;
+
+    if (answer !== null) {
+      state.messages.push({ type: "user", text: answer });
+
+      // The user answered, so the ticket isn't waiting on them anymore
+      if (state.status === "Waiting on User") {
+        state.status = "In Progress";
+      }
+    }
+
+    // Redraw whichever screen you're on
+    if (openTicketId === ticket.id) {
+      tvStatus.value = state.status;
+      renderThread();
+    } else if (openTicketId === null) {
+      renderQueue();
+    }
+  });
 }
 
 function closeTicket() {

@@ -18,6 +18,8 @@ const tabNote      = document.getElementById("tab-note");
 const composerText = document.getElementById("composer-text");
 const composerHint = document.getElementById("composer-hint");
 const composerSend = document.getElementById("composer-send");
+const tvSlaResponse = document.getElementById("tv-sla-response");
+const tvSlaResolve  = document.getElementById("tv-sla-resolve");
 
 // ===== The agent's work on each ticket =====
 // tickets.js is the "starting script" and never changes.
@@ -35,7 +37,11 @@ TICKETS.forEach(function (ticket) {
     //   "note"  = you wrote it, IT staff only
     messages: [
       { type: "user", text: ticket.firstMessage }
-    ]
+    ],
+    // SLA tracking, all in game minutes (see sla.js)
+    elapsed: 0,             // working time used so far (pauses don't count)
+    firstResponseAt: null,  // when you sent your first reply
+    resolvedAt: null        // when you set Resolved or Closed
   };
 });
 
@@ -66,7 +72,7 @@ function makeRow(ticket) {
     <td>${ticket.requester}<br><small>${ticket.setting}</small></td>
     <td>${priorityBadge(state.priority)}</td>
     <td>${state.status}</td>
-    <td>—</td>
+    <td><span id="sla-${ticket.id}"></span></td>
   `;
   // Clicking the row opens that ticket
   row.addEventListener("click", function () {
@@ -81,6 +87,7 @@ function renderQueue() {
   TICKETS.forEach(function (ticket) {
     queueBody.appendChild(makeRow(ticket));
   });
+  updateSlaDisplays();
 }
 
 // ===== Ticket view =====
@@ -105,6 +112,8 @@ function openTicket(id) {
   // Set the dropdowns to whatever you chose last time
   tvPriority.value = state.priority;
   tvStatus.value = state.status;
+
+  updateSlaDisplays();
 
   // Show the conversation and reset the writing box
   renderThread();
@@ -178,10 +187,18 @@ function sendMessage() {
     return;   // nothing typed, do nothing
   }
 
-  ticketState[openTicketId].messages.push({
+  const state = ticketState[openTicketId];
+  state.messages.push({
     type: composerMode,   // "reply" or "note"
     text: text
   });
+
+  // Your first reply to the user stops the first-response clock.
+  // Internal notes don't count: the user can't see them.
+  if (composerMode === "reply" && state.firstResponseAt === null) {
+    state.firstResponseAt = state.elapsed;
+    updateSlaDisplays();
+  }
 
   composerText.value = "";
   renderThread();
@@ -199,11 +216,24 @@ function closeTicket() {
 // When you pick a priority, save it for the open ticket
 tvPriority.addEventListener("change", function () {
   ticketState[openTicketId].priority = tvPriority.value;
+  updateSlaDisplays();   // new priority = new SLA targets
 });
 
 // When you pick a status, save it for the open ticket
 tvStatus.addEventListener("change", function () {
-  ticketState[openTicketId].status = tvStatus.value;
+  const state = ticketState[openTicketId];
+  state.status = tvStatus.value;
+
+  // Resolved/Closed stops the resolution clock.
+  // Reopening (any other status) starts it again.
+  if (DONE_STATUSES.includes(state.status)) {
+    if (state.resolvedAt === null) {
+      state.resolvedAt = state.elapsed;
+    }
+  } else {
+    state.resolvedAt = null;
+  }
+  updateSlaDisplays();
 });
 
 backButton.addEventListener("click", closeTicket);
@@ -218,5 +248,66 @@ tabNote.addEventListener("click", function () {
 
 composerSend.addEventListener("click", sendMessage);
 
+// ===== SLA clock =====
+
+// Is this ticket's clock running right now?
+function clockRunning(state) {
+  return !PAUSED_STATUSES.includes(state.status) && state.resolvedAt === null;
+}
+
+// Work out both SLA clocks for one ticket
+function slaFor(state) {
+  const targets = slaTargets(state.priority);
+  const paused = PAUSED_STATUSES.includes(state.status);
+  return {
+    response: slaClock(targets.response, state.elapsed, state.firstResponseAt, paused),
+    resolve:  slaClock(targets.resolve,  state.elapsed, state.resolvedAt, paused)
+  };
+}
+
+// Put a clock's text and color on an element
+function showClock(element, label, clock) {
+  element.textContent = label + clock.text;
+  element.className = "sla sla-" + clock.color;
+}
+
+// Refresh every SLA shown on the page
+function updateSlaDisplays() {
+  TICKETS.forEach(function (ticket) {
+    const state = ticketState[ticket.id];
+    const sla = slaFor(state);
+    const cell = document.getElementById("sla-" + ticket.id);
+    if (cell === null) {
+      return;
+    }
+    // The queue shows whichever clock matters right now:
+    // response until you've replied, then resolution.
+    if (state.firstResponseAt === null) {
+      showClock(cell, "Respond: ", sla.response);
+    } else {
+      showClock(cell, "Resolve: ", sla.resolve);
+    }
+  });
+
+  // The open ticket shows both clocks
+  if (openTicketId !== null) {
+    const sla = slaFor(ticketState[openTicketId]);
+    showClock(tvSlaResponse, "First response: ", sla.response);
+    showClock(tvSlaResolve,  "Resolution: ",     sla.resolve);
+  }
+}
+
+// Every real second, add game time to every running clock
+function tick() {
+  TICKETS.forEach(function (ticket) {
+    const state = ticketState[ticket.id];
+    if (clockRunning(state)) {
+      state.elapsed += GAME_SPEED / 60;   // 15 game seconds = 0.25 game minutes
+    }
+  });
+  updateSlaDisplays();
+}
+
 // ===== Start-up =====
 renderQueue();
+setInterval(tick, 1000);   // run tick() once every 1000 ms (1 second)

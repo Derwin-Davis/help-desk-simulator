@@ -280,3 +280,26 @@ h3 {
 .composer.note-mode #composer-send {
   background: #ca8a04;
 }
+
+/* ===== SLA clocks (Step 4) ===== */
+.sla-bar {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.sla {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.sla-ok       { background: #dcfce7; color: #15803d; }  /* green: plenty of time */
+.sla-warning  { background: #fef9c3; color: #a16207; }  /* yellow: half or less left */
+.sla-breached { background: #fee2e2; color: #b91c1c; }  /* red: missed */
+.sla-paused   { background: #e5e7eb; color: #4b5563; }  /* gray: clock paused */
+.sla-met      { background: #dbeafe; color: #1d4ed8; }  /* blue: done on time */
